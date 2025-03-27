@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -fPIC
-LDFLAGS = -shared
+CFLAGS = -Wall -fPIC -O3 -mavx -mfma -fopenmp -MMD -MP
+LDFLAGS = -shared -fopenmp
 
 # Folders
 SRC_DIR = src/drone
@@ -20,6 +20,7 @@ all: $(TARGET)
 
 # Rule to build the shared TARGET
 $(TARGET): $(OBJS)
+	@mkdir -p $(LIB_DIR)  # Ensure lib directory exists
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Rule to build object files in the build directory from source files
@@ -29,4 +30,4 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Clean up build files and the shared library
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf $(BUILD_DIR) $(LIB_DIR)

@@ -1,7 +1,7 @@
 import numpy as np
 import gymnasium as gym
 
-from ctrlab.systems.drone3D import Drone3D_C, Drone3D_PY
+from ctrlab.systems.drone.drone3D import Drone3D_C, Drone3D_PY
 from ctrlab.utils.quaternion import *
 
 MAX_STEPS = 1000
@@ -41,7 +41,7 @@ class Hover(gym.Env):
         # E = np.random.uniform(low=-np.pi/8, high=np.pi/8, size=(3,)).astype(np.float32)
         # Q = euler_to_quat(E, dtype=np.float32)
         Q = np.array([1,0,0,0], dtype=np.float32)
-        V = np.random.uniform(low=-0.5, high=0.5, size=(3,)).astype(np.float32)
+        # V = np.random.uniform(low=-0.5, high=0.5, size=(3,)).astype(np.float32)
         V = np.array([0,0,0], dtype=np.float32)
         W = np.array([0,0,0]).astype(np.float32)
         

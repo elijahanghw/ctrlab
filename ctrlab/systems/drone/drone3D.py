@@ -64,8 +64,6 @@ class Drone3D_C:
         self.states = np.concatenate([X, Q, V, W])
         
     def step(self, U, ground_collision=False):
-        derivatives = np.zeros(13, dtype=np.float32)
-        
         # Convert the matrix and vector to pointers to pass to the C function
         c_I= self.I.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
         c_I_inv = self.I_inv.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
@@ -129,7 +127,8 @@ class Drone3D_PY:
         W = x[10:13]
         
         # Forces
-        F = self.G1 @ U
+        rpm = U**2
+        F = self.G1 @ rpm
         
         # Rotation matrix
         R = quat_to_rot(Q)

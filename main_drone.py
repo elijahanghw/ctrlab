@@ -2,7 +2,7 @@ from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ctrlab.systems.drone3D import Drone3D_C, Drone3D_PY
+from ctrlab.systems.drone.drone3D import Drone3D_C, Drone3D_PY
 from ctrlab.utils.quaternion import euler_to_quat
 
 numsteps = 1000
@@ -57,11 +57,15 @@ for i in range(1, numsteps+1):
     
 print(f"Computation time for python : {time() - start_time}")
 
+rms = np.sqrt(np.mean((statesc - statespy)**2))
+print(f"RMS : {rms}")
+
 plt.plot(statesc[:,0], statesc[:,2])
 plt.plot(statespy[:,0], statespy[:,2])
-plt.xlim([-10, 10])
-plt.ylim([-10, 10])
+plt.xlim([-2, 2])
+plt.ylim([-2, 2])
 plt.xlabel("x [m]")
 plt.ylabel("z [m]")
 plt.gca().invert_yaxis()
-plt.show()
+plt.savefig("drone3D.png")
+# plt.show()

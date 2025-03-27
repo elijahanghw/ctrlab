@@ -70,5 +70,17 @@ def quat_to_euler(q):
 
     return phi, theta, psi
 
-def quat_error(q1, q2):
-    pass
+def quat_mult(q1, q2):
+    q1 = quat_normalize(q1)
+    q2 = quat_normalize(q2)
+
+    q_0 = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3]
+    q_1 = q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2]
+    q_2 = q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1]
+    q_3 = q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0]
+
+    return np.array([q_0, q_1, q_2, q_3], dtype=np.float32)
+
+def quat_inv(q):
+    q = quat_normalize(q)
+    return np.array([q[0], -q[1], -q[2], -q[3]], dtype=np.float32)

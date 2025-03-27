@@ -19,7 +19,7 @@ void mat_vec_mul(float* matrix, float* vector, float* result, int rows, int cols
 void transpose(float* mat, float* result, int rows, int cols) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            result[j * rows + i] = mat[i * cols + j];  // Transpose the matrix
+            result[j * rows + i] = mat[i * cols + j];
         }
     }
 }

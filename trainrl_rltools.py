@@ -8,7 +8,7 @@ from gymnasium.wrappers import RescaleAction
 from ctrlab.rl.pendulum import SimplePendulumEnv
 from ctrlab.rl.hover import Hover
 
-NUM_ENVIRONMENTS = 128
+NUM_ENVIRONMENTS = 1024
 
 seed = np.random.randint(1)
 environment_name = 'drone-hover-v0'
@@ -22,9 +22,9 @@ def env_factory():
 
 ppo = PPO(env_factory, 
           N_ENVIRONMENTS=NUM_ENVIRONMENTS, 
-          TOTAL_STEP_LIMIT=2000000, 
-          ON_POLICY_RUNNER_STEPS_PER_ENV=64,
-          BATCH_SIZE=128)
+          TOTAL_STEP_LIMIT=10000000, 
+          ON_POLICY_RUNNER_STEPS_PER_ENV=128,
+          BATCH_SIZE=1024)
 
 state = ppo.State(seed)
 finished = False
