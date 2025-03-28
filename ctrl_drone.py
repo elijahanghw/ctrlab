@@ -28,6 +28,7 @@ attitude_controller = att_PID(K=5, dt=dt)
 
 attitude_controller.initialize(drone.states)
 desired_attitude = np.array([1, 0, 0, 0], dtype=np.float32)
+desired_thrust = np.array([0, 0, 0.5], dtype=np.float32)
 cmd = np.zeros((numsteps, 4))
 
 start_time = time()     

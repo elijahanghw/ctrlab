@@ -1,4 +1,5 @@
 .vscode/
 build/
 lib/
+figures/
 policy.h

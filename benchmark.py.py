@@ -2,7 +2,7 @@ from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ctrlab.systems.drone.drone3D import Drone3D_C, Drone3D_PY
+from ctrlab.systems.drone.drone3D import *
 from ctrlab.utils.quaternion import euler_to_quat
 
 numsteps = 1000
@@ -34,16 +34,38 @@ for i in range(1, numsteps+1):
     simc.step(U, ground_collision=False)
     statesc[i,:] = simc.states
     
-print(f"Computation time for C : {time() - start_time}")
+print(f"FPS for C : {numsteps/(time() - start_time)}")
+
+
+# Simulator in vectorized C
+simvec = Drone3D_vec(num_envs=1, mass=1, inertia=0.1*np.eye(3, dtype=np.float32))
+
+simvec.setup(dt=dt)
+simvec.initialize_states(X=X,
+                         Q=Q,
+                         V=V,
+                         W=W)
+
+statesvec = np.zeros((numsteps+1, 13))
+
+statesvec[0,:] = simvec.states
+
+start_time = time()     
+for i in range(1, numsteps+1): 
+    
+    simvec.step(U, ground_collision=False)
+    statesvec[i,:] = simvec.states
+    
+print(f"FPS for vectorized C : {numsteps/(time() - start_time)}")
 
 # Simulator in python
 simpy = Drone3D_PY(mass=1, inertia=0.1*np.eye(3, dtype=np.float32))
 
 simpy.setup(dt=dt)
 simpy.initialize_states(X=X,
-                      Q=Q,
-                      V=V,
-                      W=W)
+                        Q=Q,
+                        V=V,
+                        W=W)
 
 statespy = np.zeros((numsteps+1, 13))
 
@@ -55,12 +77,13 @@ for i in range(1, numsteps+1):
     simpy.step(U, ground_collision=False)
     statespy[i,:] = simpy.states
     
-print(f"Computation time for python : {time() - start_time}")
+print(f"FPS for python : {numsteps/(time() - start_time)}")
 
 rms = np.sqrt(np.mean((statesc - statespy)**2))
 print(f"RMS : {rms}")
 
 plt.plot(statesc[:,0], statesc[:,2])
+plt.plot(statesvec[:,0], statesvec[:,2])
 plt.plot(statespy[:,0], statespy[:,2])
 plt.xlim([-2, 2])
 plt.ylim([-2, 2])
