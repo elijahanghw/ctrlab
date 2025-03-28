@@ -126,7 +126,11 @@ class Drone3D_vec:
         self.I_inv = np.linalg.inv(inertia)
         self.G1 = G1
         self.states = np.zeros((num_envs, 13), dtype=np.float32)
-        self.initialize_states()
+        self.initialize_states(X=np.array([[0, 0, 0]]*self.num_envs),
+                               Q=np.array([[1, 0, 0, 0]]*self.num_envs),
+                               V=np.array([[0, 0, 0]]*self.num_envs),
+                               W=np.array([[0, 0, 0]]*self.num_envs)
+                               )
 
         
     def setup(self, dt=0.01, integration='rk4'):
@@ -136,15 +140,8 @@ class Drone3D_vec:
         self.dt = dt
         self.integration = integration
         
-    def initialize_states(self,
-                          X=np.array([0, 0, 0]),
-                          Q=np.array([1, 0, 0, 0]),
-                          V=np.array([0, 0, 0]),
-                          W=np.array([0, 0, 0])
-                          ):
-        
-        for i in range(self.num_envs):
-            self.states[i] = np.concatenate([X, Q, V, W])
+    def initialize_states(self, X, Q, V, W):
+            self.states = np.concatenate([X, Q, V, W], axis=1).astype(np.float32)
         
     def step(self, U, ground_collision=False):
         # Convert the matrix and vector to pointers to pass to the C function
@@ -217,13 +214,13 @@ class Drone3D_PY:
         R = quat_to_rot(Q)
         
         # Linear acceleration
-        dV = F[0:3]/self.mass - np.cross(W, V) + R @ np.array([0, 0, 9.81])
+        dV = F[0:3]/self.mass - np.cross(W, V) + R.T @ np.array([0, 0, 9.81])
         
         # Angular acceleration
         dW = self.I_inv @ (F[3:6] - np.cross(W, self.I@W))
         
         # Change in position
-        dX = R.T @ V
+        dX = R @ V
         
         # Change in quaternion
         dQ = quat_derivative(Q, W)

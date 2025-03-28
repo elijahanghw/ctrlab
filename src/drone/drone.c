@@ -1,11 +1,12 @@
 #include <string.h>
+#include <omp.h>
 #include "drone.h"
 #include "matrix.h"
 #include "quaternions.h"
 
 #define NUM_STATES 13
 
-void equations_of_motion(float mass, float* I, float* I_inv, float* G1, float* states, float* U, float* derivatives) {
+void body_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float* states, float* U, float* derivatives) {
     float *Q = &states[3];
     float *V = &states[7];
     float *W = &states[10];
@@ -26,7 +27,7 @@ void equations_of_motion(float mass, float* I, float* I_inv, float* G1, float* s
     // Compute gravity
     float GRAVITY[3] = {0.0, 0.0, 9.81};
     float B_GRAVITY[3];
-    mat_vec_mul(R, GRAVITY, B_GRAVITY, 3, 3);
+    mat_vec_mul(RT, GRAVITY, B_GRAVITY, 3, 3);
 
     // Compute W x V
     float WxV[3];
@@ -50,17 +51,60 @@ void equations_of_motion(float mass, float* I, float* I_inv, float* G1, float* s
     mat_vec_mul(I_inv, alpha, &derivatives[10], 3, 3);
 
     // Calculate rate of change of position
-    mat_vec_mul(RT, V, &derivatives[0], 3, 3);
+    mat_vec_mul(R, V, &derivatives[0], 3, 3);
 
     // Calculate quaternion derivatives
     quat_derivative(Q, W, &derivatives[3]);
 }
 
-void vec_equations_of_motion(int num_envs, float mass, float* I, float* I_inv, float* G1, float* states, float* U, float* derivatives) {
-    for (int n = 0; n < num_envs; n++) {
-        equations_of_motion(mass, I, I_inv, G1, &states[n*NUM_STATES], &U[n*4], &derivatives[n*NUM_STATES]);
+void inertial_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float* states, float* U, float* derivatives) {
+    float *Q = &states[3];
+    float *V = &states[7];
+    float *W = &states[10];
+
+    // Compute rotation matrix
+    float R[9], RT[9];
+    quat_to_rot(Q, R);
+    transpose(R, RT, 3, 3);
+
+    // Calculate forces in inertia frame
+    float F[6], rpm[4]; 
+    for (int i = 0; i < 4; i++) {
+        rpm[i] = U[i] * U[i];
     }
+    mat_vec_mul(G1, rpm, F, 6, 4);
+    mat_vec_mul(R, F, F, 3, 3)
+
+    // Calculate linear acceleration
+    // Compute gravity
+    float GRAVITY[3] = {0.0, 0.0, 9.81};
+
+    for (int i = 0; i < 3; i++) {
+        derivatives[i + 7] = F[i] / mass + GRAVITY[i];
+    }
+
+    float alpha[3];
+    for (int i = 0; i < 3; i++) {
+        alpha[i] = F[i + 3];
+    }
+
+    mat_vec_mul(I_inv, alpha, &derivatives[10], 3, 3);
+
+    // Calculate rate of change of position
+    for (int i = 0; i < 3; i++) {
+        derivatives[i] = V[i];
+    }
+
+    // Calculate quaternion derivatives
+    quat_derivative(Q, W, &derivatives[3]);
 }
+
+// void vec_equations_of_motion(int num_envs, float mass, float* I, float* I_inv, float* G1, float* states, float* U, float* derivatives) {
+//     #pragma omp parallel for
+//     for (int n = 0; n < num_envs; n++) {
+//         equations_of_motion(mass, I, I_inv, G1, &states[n*NUM_STATES], &U[n*4], &derivatives[n*NUM_STATES]);
+//     }
+// }
 
 
 void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float* states, float* U, float dt) {
@@ -72,13 +116,13 @@ void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float* states,
         temp_states[i] = states[i];
     }
 
-    equations_of_motion(mass, I, I_inv, G1, temp_states, U, k[0]);
+    body_equations_of_motion(mass, I, I_inv, G1, temp_states, U, k[0]);
 
     for (int i = 1; i < 4; i++) { 
         for (int j = 0; j < NUM_STATES; j++) {
             temp_states[j] = states[j] + c[i] * k[i-1][j] * dt;
         }
-        equations_of_motion(mass, I, I_inv, G1, temp_states, U, k[i]);
+        body_equations_of_motion(mass, I, I_inv, G1, temp_states, U, k[i]);
     }
 
     for (int i = 0; i < NUM_STATES; i++) {
@@ -89,6 +133,7 @@ void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float* states,
 }
 
 void vec_integrate_rk4(int num_envs, float mass, float* I, float* I_inv, float* G1, float* states, float* U, float dt) {
+    #pragma omp parallel for
     for (int n=0; n<num_envs; n++) {
         integrate_rk4(mass, I, I_inv, G1, &states[n*NUM_STATES], &U[n*4], dt);
     }
@@ -97,7 +142,7 @@ void vec_integrate_rk4(int num_envs, float mass, float* I, float* I_inv, float* 
 void integrate_euler(float mass, float* I, float* I_inv, float* G1, float* states, float* U, float dt) {
     float derivatives[NUM_STATES];
 
-    equations_of_motion(mass, I, I_inv, G1, states, U, derivatives);
+    body_equations_of_motion(mass, I, I_inv, G1, states, U, derivatives);
     for (int i = 0; i < NUM_STATES; i++) {
         states[i] += derivatives[i] * dt;
     }
@@ -106,6 +151,7 @@ void integrate_euler(float mass, float* I, float* I_inv, float* G1, float* state
 }
 
 void vec_integrate_euler(int num_envs, float mass, float* I, float* I_inv, float* G1, float* states, float* U, float dt) {
+    #pragma omp parallel for
     for (int n=0; n<num_envs; n++) {
         integrate_euler(mass, I, I_inv, G1, &states[n*NUM_STATES], &U[n*4], dt);
     }

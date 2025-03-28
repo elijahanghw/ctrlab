@@ -54,7 +54,7 @@ plt.xlabel("Time")
 plt.ylabel("q")
 plt.legend()
 plt.grid()
-plt.savefig("attitude_drone.png")
+plt.savefig("figures/attitude_drone.png")
 
 plt.figure()
 plt.plot(cmd[:,0], label="M1", color="red")
@@ -65,7 +65,7 @@ plt.xlabel("Time")
 plt.ylabel("Motor Command")
 plt.legend()
 plt.grid()
-plt.savefig("cmd_drone.png")
+plt.savefig("figures/cmd_drone.png")
 
 
 plt.show()

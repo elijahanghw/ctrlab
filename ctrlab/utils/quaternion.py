@@ -84,3 +84,17 @@ def quat_mult(q1, q2):
 def quat_inv(q):
     q = quat_normalize(q)
     return np.array([q[0], -q[1], -q[2], -q[3]], dtype=np.float32)
+
+
+from numpy import sin, cos
+def euler_to_rot(angle):
+    phi = angle[0]
+    theta = angle[1]
+    psi = angle[2]
+    
+    Rx = np.array([[1, 0, 0], [0, cos(phi), -sin(phi)], [0, sin(phi), cos(phi)]])
+    Ry = np.array([[cos(theta), 0, sin(theta)], [0, 1, 0], [-sin(theta), 0, cos(theta)]])
+    Rz = np.array([[cos(psi), -sin(psi), 0], [sin(psi), cos(psi), 0], [0, 0, 1]])
+    R = Rz@Ry@Rx
+    
+    return R
