@@ -12,6 +12,7 @@ X=np.array([0, 0, 0], dtype=np.float32)
 Q=euler_to_quat([0, 0, 0], dtype=np.float32)
 V=np.array([0, 0, 0], dtype=np.float32)
 W=np.array([0, 0, 0], dtype=np.float32)
+w=np.array([0, 0, 0, 0], dtype=np.float32)
 
 U = np.array([0.5, 0.3, 0.5, 0.3], dtype=np.float32)
 
@@ -22,42 +23,43 @@ simc.setup(dt=dt)
 simc.initialize_states(X=X,
                       Q=Q,
                       V=V,
-                      W=W)
+                      W=W,
+                      w=w)
 
 statesc = np.zeros((numsteps+1, 13))
 
-statesc[0,:] = simc.states
+statesc[0,:] = simc.states[0:13]
 
 start_time = time()     
 for i in range(1, numsteps+1): 
     simc.step(U, ground_collision=False)
-    statesc[i,:] = simc.states
+    statesc[i,:] = simc.states[0:13]
     
 print(f"FPS for C : {numsteps/(time() - start_time)}")
 
 
 # Simulator in vectorized C
-num_envs = 1000
+num_envs = 10
 U_vec = np.array([U] * num_envs, dtype=np.float32)
-simvec = Drone3D_vec(num_envs=num_envs, mass=1, inertia=0.1*np.eye(3, dtype=np.float32))
+simvec = Drone3D_vec(num_envs=num_envs, mass=1, inertia=0.1*np.eye(3, dtype=np.float32), use_cuda=True)
 
 simvec.setup(dt=dt)
 simvec.initialize_states(X=np.array([X] * num_envs),
                          Q=np.array([Q] * num_envs),
                          V=np.array([V] * num_envs),
-                         W=np.array([W] * num_envs))
+                         W=np.array([W] * num_envs),
+                         w=np.array([w] * num_envs))
 
 statesvec = np.zeros((numsteps+1, 13))
 
-statesvec[0,:] = simvec.states[10]
+statesvec[0,:] = simvec.states[0,0:13]
 
 start_time = time()     
 for i in range(1, numsteps+1): 
     simvec.step(U_vec, ground_collision=False)
-    statesvec[i,:] = simvec.states[10]
+    statesvec[i,:] = simvec.states[0,0:13]
     
 print(f"FPS for vectorized C ({num_envs} environments) : {numsteps*num_envs/(time() - start_time)}")
-
 
 # Simulator in python
 simpy = Drone3D_PY(mass=1, inertia=0.1*np.eye(3, dtype=np.float32))
@@ -70,13 +72,13 @@ simpy.initialize_states(X=X,
 
 statespy = np.zeros((numsteps+1, 13))
 
-statespy[0,:] = simpy.states
+statespy[0,:] = simpy.states[0:13]
 
 start_time = time()     
 for i in range(1, numsteps+1): 
     
     simpy.step(U, ground_collision=False)
-    statespy[i,:] = simpy.states
+    statespy[i,:] = simpy.states[0:13]
     
 print(f"FPS for python : {numsteps/(time() - start_time)}")
 

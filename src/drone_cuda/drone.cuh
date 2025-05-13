@@ -1,12 +1,10 @@
-#include <string.h>
-#include <omp.h>
-#include "drone.h"
-#include "matrix.h"
-#include "quaternions.h"
+#pragma once
+
+#include <cuda_runtime.h>
 
 #define NUM_STATES 17
 
-void body_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float* derivatives) {
+__device__ void body_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float* derivatives) {
     float *Q = &states[3];
     float *V = &states[7];
     float *W = &states[10];
@@ -63,7 +61,7 @@ void body_equations_of_motion(float mass, float* I, float* I_inv, float* G1, flo
     }
 }
 
-void inertial_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float* derivatives) {
+__device__ void inertial_equations_of_motion(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float* derivatives) {
     float *Q = &states[3];
     float *V = &states[7];
     float *W = &states[10];
@@ -111,7 +109,7 @@ void inertial_equations_of_motion(float mass, float* I, float* I_inv, float* G1,
     }
 }
 
-void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
+__device__ void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
     float temp_states[NUM_STATES];
     float c[4] = {0, 0.5, 0.5, 1};
     float k[4][NUM_STATES];
@@ -136,14 +134,7 @@ void integrate_rk4(float mass, float* I, float* I_inv, float* G1, float tau, flo
     normalize_quaternion(&states[3]);
 }
 
-void vec_integrate_rk4(int num_envs, float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
-    #pragma omp parallel for
-    for (int n=0; n<num_envs; n++) {
-        integrate_rk4(mass, I, I_inv, G1, tau, &states[n*NUM_STATES], &U[n*4], dt);
-    }
-}
-
-void integrate_euler(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
+__device__ void integrate_euler(float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
     float derivatives[NUM_STATES];
 
     body_equations_of_motion(mass, I, I_inv, G1, tau, states, U, derivatives);
@@ -152,11 +143,4 @@ void integrate_euler(float mass, float* I, float* I_inv, float* G1, float tau, f
     }
 
     normalize_quaternion(&states[3]);
-}
-
-void vec_integrate_euler(int num_envs, float mass, float* I, float* I_inv, float* G1, float tau, float* states, float* U, float dt) {
-    #pragma omp parallel for
-    for (int n=0; n<num_envs; n++) {
-        integrate_euler(mass, I, I_inv, G1, tau, &states[n*NUM_STATES], &U[n*4], dt);
-    }
 }

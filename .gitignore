@@ -3,3 +3,5 @@ build/
 lib/
 figures/
 policy.h
+
+**/__pycache__/
