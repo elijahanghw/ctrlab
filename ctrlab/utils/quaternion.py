@@ -98,3 +98,12 @@ def euler_to_rot(angle):
     R = Rz@Ry@Rx
     
     return R
+
+def axis_angle_to_quat(axis, angle):
+    # axis: [N, 3], angle: [N]
+    half_angle = angle / 2
+    sin_half = np.sin(half_angle)
+    q = np.zeros((axis.shape[0], 4), dtype=axis.dtype)
+    q[:,0] = np.cos(half_angle)             # w
+    q[:,1:] = axis * sin_half[:,None]       # x, y, z
+    return q
